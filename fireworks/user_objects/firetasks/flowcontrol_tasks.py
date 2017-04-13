@@ -2,50 +2,16 @@ __author__ = 'Ivan Kondov'
 __email__ = 'ivan.kondov@kit.edu'
 __copyright__ = 'Copyright 2017, Karlsruhe Institute of Technology'
 
+""" Please read the file LICENSE """
+
 from fireworks import Firework
 from fireworks.core.firework import FWAction, FireTaskBase
 from fireworks.utilities.fw_utilities import explicit_serialize
 from fireworks.utilities.fw_serializers import load_object
 
 """
-This collection includes to realize control flow operators in workflows. The 
-logical expressions must be specified as lambda functions.
-
-1. Conditional
-    if (logical):
-        (tasks)
-    elif (logical):
-        (tasks)
-    ...
-    else:
-        (tasks)
-
-Remark: only simple if operator is implemented.
-
-2. Switching 
-    choose:
-        when (logical): (tasks)
-        when (logical): (tasks)
-        ...
-        otherwise: (tasks)
-
-    switch: (expression):
-        case (constant): (tasks)
-        case (constant): (tasks)
-        ...
-        default: (tasks)
-
-Remark: Not implemented.
-
-3. Loops
-    while (logical): (tasks)
-    repeat (tasks) until (logical)
-    do (tasks) while (logical)
-
-Remark: "While" does not execute the firetasks in case of true because upon 
-"detour" FireWorks skip all remaining firetasks and continue with the the 
-next firework. Use python functions in this case.
-
+This collection includes firetasks to realize control flow operators in 
+workflows.
 """
 
 class ConditionalTask(FireTaskBase):
@@ -112,8 +78,9 @@ class ConditionalTask(FireTaskBase):
 class RepeatUntil(ConditionalTask):
     """
     The body is executed first. After that the condition is tested. If the 
-    condition evaulates to False then a new firework with the same tasks is 
+    condition evaluates to False then a new firework with the same tasks is 
     created and inserted to the workflow.
+    pseudo-code: repeat (tasks) until (logical)
     """
     _fw_name = 'RepeatUntil'
     optional_params = ['function', 'inputs', 'outputs', 'counter']
@@ -137,6 +104,7 @@ class DoWhile(ConditionalTask):
     The body is executed first. After that the condition is tested. If the 
     condition evaluates to True then a new firework with the same tasks is 
     created and inserted to the workflow.
+    pseudo-code: do (tasks) while (logical)
     """
     _fw_name = 'DoWhile'
     optional_params = ['function', 'inputs', 'outputs', 'counter']
@@ -160,6 +128,11 @@ class While(ConditionalTask):
     If the condition evaluates to True then the function in this firetask is 
     executed and a new firework with the same tasks is created and inserted to 
     the workflow.
+    pseudo-code: while (logical): (tasks)
+
+    Remark: In case of True the firetasks following While are skipped because on 
+    "detour" FireWorks skips all remaining firetasks and continues with the 
+    next firework. Use python functions in this case.
     """
     _fw_name = 'While'
     optional_params = ['function', 'inputs', 'outputs', 'counter']
@@ -182,6 +155,8 @@ class If(ConditionalTask):
     """
     If the condition is True then function in this firetask and the firetasks in 
     the firework following this task are executed and otherwise skipped.
+    pseudo-code: if (logical): (tasks) elif (logical): (tasks) else: (tasks)
+    Remark: only simple if operator is implemented.
     """
     _fw_name = 'If'
     optional_params = ['function', 'inputs', 'outputs']
@@ -192,4 +167,25 @@ class If(ConditionalTask):
         else:
             return FWAction(exit=True)
 
+
+
+class Choose(ConditionalTask):
+    """
+    choose:
+        when (logical): (tasks)
+        when (logical): (tasks)
+        ...
+        otherwise: (tasks)
+
+    switch: (expression):
+        case (constant): (tasks)
+        case (constant): (tasks)
+        ...
+        default: (tasks)
+
+    Remark: Not implemented.
+    """
+    pass
+
+Switch = Choose
 
