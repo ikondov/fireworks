@@ -52,8 +52,8 @@ class ConditionalTask(FireTaskBase):
         elif node_input is not None:
             raise TypeError('input must be a string or a list')
 
-        foo, bar = self['function'].split('.',2)
-        func = getattr(__import__(foo), bar)
+        prefix, suffix = self['function'].split('.',2)
+        func = getattr(__import__(prefix), suffix)
         return func(*inputs)
 
     def increment_counter(self, fw_spec):
