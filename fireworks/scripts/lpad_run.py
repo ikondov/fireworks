@@ -162,7 +162,35 @@ def add_wf(args):
         files = args.wf_file
     for f in files:
         fwf = Workflow.from_file(f)
+        if args.check:
+            from fireworks.utilities.dagflow import DAGFlow
+            DAGFlow.from_fireworks(fwf)
         lp.add_wf(fwf)
+
+
+def append_wf(args):
+    lp = get_lp(args)
+    lp.append_wf(
+        Workflow.from_file(args.wf_file),
+        args.fw_id,
+        detour=args.detour,
+        pull_spec_mods=args.pull_spec_mods
+    )
+
+
+def dump_wf(args):
+    lp = get_lp(args)
+    lp.get_wf_by_fw_id(args.fw_id).to_file(args.wf_file)
+
+
+def check_wf(args):
+    from fireworks.utilities.dagflow import DAGFlow
+    lp = get_lp(args)
+    dagf = DAGFlow.from_fireworks(lp.get_wf_by_fw_id(args.fw_id))
+    if args.data_flow or args.control_flow:
+        dagf.add_step_labels()
+        view = 'data flow' if args.data_flow else 'control flow'
+        dagf.to_dot(args.dot_file, view=view)
 
 
 def add_wf_dir(args):
@@ -686,7 +714,27 @@ def lpad():
                                    "paths given by wf_file.")
     addwf_parser.add_argument('wf_file', nargs="+",
                               help="Path to a Firework or Workflow file")
-    addwf_parser.set_defaults(func=add_wf)
+    addwf_parser.add_argument('-c', '--check', help='check the workflow before adding', dest='check', action='store_true')
+    addwf_parser.set_defaults(func=add_wf, check=False)
+
+    append_wf_parser = subparsers.add_parser('append_wflow', help='append a workflow from file to a workflow on launchpad')
+    append_wf_parser.add_argument('-i', '--fw_id', type=int, nargs='+', help='parent firework ids')
+    append_wf_parser.add_argument('-f', '--wf_file', help='path to a firework or workflow file')
+    append_wf_parser.add_argument('-d', '--detour', help='append workflow as a detour', dest='detour', action='store_true')
+    append_wf_parser.add_argument('--no_pull_spec_mods', help='do not to pull spec mods from parent', dest='pull_spec_mods', action='store_false')
+    append_wf_parser.set_defaults(func=append_wf, detour=False, pull_spec_mods=True)
+
+    dump_wf_parser = subparsers.add_parser('dump_wflow', help='dump a workflow from launchpad to a file')
+    dump_wf_parser.add_argument('-i', '--fw_id', type=int, help='the id of a firework from the workflow')
+    dump_wf_parser.add_argument('-f', '--wf_file', help='path to a local file to store the workflow')
+    dump_wf_parser.set_defaults(func=dump_wf)
+
+    check_wf_parser = subparsers.add_parser('check_wflow', help='validate and view a workflow from launchpad')
+    check_wf_parser.add_argument('-i', '--fw_id', type=int, help='the id of a firework from the workflow')
+    check_wf_parser.add_argument('--view_control_flow', help='view the control flow graph in DOT format', dest='control_flow', action='store_true')
+    check_wf_parser.add_argument('--view_data_flow', help='view the data flow graph in DOT format', dest='data_flow', action='store_true')
+    check_wf_parser.add_argument('-f', '--dot_file', help='path to store the workflow graph, default: workflow.dot', default='workflow.dot')
+    check_wf_parser.set_defaults(func=check_wf, control_flow=False, data_flow=False)
 
     addscript_parser = subparsers.add_parser('add_scripts', help='quickly add a script '
                                                                  '(or several scripts) to run in sequence')
