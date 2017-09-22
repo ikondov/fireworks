@@ -13,10 +13,10 @@
 <body>
     <div class="container">
         <a href="/" >
-            <img  class="brand" src="{{ url_for('static', filename='images/fw-logo.png') }}"></img>
+            <img class="brand" src="{{ url_for('static', filename='images/fw-logo.png') }}"></img>
         </a>
     </div>
-    <hr>
+    <hr class="myhrline">
     <div class="container">
         {% block content %}{% endblock %}
     </div>
@@ -26,7 +26,7 @@
     <hr>
     <footer class="footer container text-center">
         <div class="pull-up">
-            &copy Copyright 2015, <a href="http://pythonhosted.org/FireWorks/">FireWorks</a>.</h5>
+            &copy Copyright 2015, <a href="https://materialsproject.github.io/fireworks/">FireWorks</a>.</h5>
         </div>
     </footer>
     {% endblock %}
