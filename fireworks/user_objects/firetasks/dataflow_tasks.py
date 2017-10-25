@@ -534,3 +534,43 @@ class ImportDataTask(FireTaskBase):
             leaf[maplist[-1]] = data
 
         return FWAction(update_spec={maplist[0]: fw_spec[maplist[0]]})
+
+
+class LambdaTask(FireTaskBase):
+    """ run a lambda function """
+    _fw_name = 'LambdaTask'
+    required_params = ['expression']
+    optional_params = ['inputs', 'outputs', 'chunk_number']
+
+    def run_task(self, fw_spec):
+        import ast
+        f = ast.parse(self['expression'], mode='eval')
+        assert isinstance(f.body, ast.Lambda)
+        func = eval(compile(f, '', 'eval'))
+
+        inputs = self.get('inputs', [])
+        assert isinstance(inputs, list)
+        args = [fw_spec[item] for item in inputs]
+
+        output = func(*args)
+
+        outputs = self.get('outputs', [])
+        assert isinstance(outputs, list)
+        actions = {}
+        if len(outputs) == 1:
+            if self.get('chunk_number') is None:
+                actions['update_spec'] = {outputs[0]: output}
+            else:
+                if isinstance(output, (list, tuple, set)):
+                    mod_spec = [{'_push': {outputs[0]: i}} for i in output]
+                else:
+                    mod_spec = [{'_push': {outputs[0]: output}}]
+                actions['mod_spec'] = mod_spec
+        elif len(outputs) > 1:
+            assert isinstance(output, (list, tuple, set))
+            assert len(output) == len(outputs)
+            actions['update_spec'] = dict(zip(outputs, output))
+        if self.get('stored_data_varname'):
+            actions['stored_data'] = {self['stored_data_varname']: output}
+        if len(actions) > 0:
+            return FWAction(**actions)
