@@ -1,6 +1,8 @@
 import os
 import unittest
 
+from bson.objectid import ObjectId
+
 from fireworks.utilities.filepad import FilePad
 
 module_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)))
@@ -47,13 +49,25 @@ class FilePadTest(unittest.TestCase):
         old_id, new_id = self.fp.update_file("test_update_file", self.chgcar_file)
         assert old_id == gfs_id
         assert new_id != gfs_id
-        assert not self.fp.gridfs.exists(old_id)
+        assert not self.fp.gridfs.exists(ObjectId(old_id))
+        # verify round-trip: updated file should be retrievable and match original
+        contents, doc = self.fp.get_file("test_update_file")
+        assert doc is not None
+        assert doc["gfs_id"] == new_id
+        with open(self.chgcar_file, "rb") as f:
+            assert contents == f.read()
 
     def test_update_file_by_id(self) -> None:
         gfs_id, _ = self.fp.add_file(self.chgcar_file, identifier="some identifier")
         old, new = self.fp.update_file_by_id(gfs_id, self.chgcar_file)
         assert old == gfs_id
         assert new != gfs_id
+        # verify round-trip: updated file should be retrievable and match original
+        contents, doc = self.fp.get_file_by_id(new)
+        assert doc is not None
+        assert doc["gfs_id"] == new
+        with open(self.chgcar_file, "rb") as f:
+            assert contents == f.read()
 
     def tearDown(self) -> None:
         self.fp.reset()
