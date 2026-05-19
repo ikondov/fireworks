@@ -250,7 +250,8 @@ class FilePad(MSONable):
         return self._update_file_contents(doc, path, compress)
 
     def delete_file_by_id(self, gfs_id) -> None:
-        """
+        """Delete the file from GridFS and remove the associated document from filepad by gfs_id.
+
         Args:
             gfs_id (str): the file id.
         """
@@ -322,7 +323,8 @@ class FilePad(MSONable):
         return None, None
 
     def _update_file_contents(self, doc, path, compress):
-        """
+        """Replace file contents in GridFS and update the filepad document with the new gfs_id.
+
         Args:
             doc (dict): From the filepad collection.
             path (str): Path to the new file whose contents will replace the existing one.
