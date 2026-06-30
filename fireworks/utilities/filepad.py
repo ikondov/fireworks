@@ -250,11 +250,12 @@ class FilePad(MSONable):
         return self._update_file_contents(doc, path, compress)
 
     def delete_file_by_id(self, gfs_id) -> None:
-        """
+        """Delete the file from GridFS and remove the associated document from filepad by gfs_id.
+
         Args:
             gfs_id (str): the file id.
         """
-        self.gridfs.delete(gfs_id)
+        self.gridfs.delete(ObjectId(gfs_id))
         self.filepad.delete_one({"gfs_id": gfs_id})
 
     def delete_file_by_query(self, query) -> None:
@@ -301,7 +302,7 @@ class FilePad(MSONable):
         if compress:
             if self.text_mode:
                 contents = contents.encode()
-            contents = zlib.compress(contents, compress)
+            contents = zlib.compress(contents)
         # insert to gridfs
         return str(self.gridfs.put(contents))
 
@@ -322,7 +323,8 @@ class FilePad(MSONable):
         return None, None
 
     def _update_file_contents(self, doc, path, compress):
-        """
+        """Replace file contents in GridFS and update the filepad document with the new gfs_id.
+
         Args:
             doc (dict): From the filepad collection.
             path (str): Path to the new file whose contents will replace the existing one.
@@ -334,9 +336,12 @@ class FilePad(MSONable):
         if doc is None:
             return None, None
         old_gfs_id = doc["gfs_id"]
-        self.gridfs.delete(old_gfs_id)
         read_mode = "r" if self.text_mode else "rb"
-        gfs_id = self._insert_to_gridfs(open(path, read_mode).read(), compress)  # noqa: SIM115
+        with open(path, read_mode) as f:
+            contents = f.read()
+        gfs_id = self._insert_to_gridfs(contents, compress)
+        self.gridfs.delete(ObjectId(old_gfs_id))
+        self.filepad.update_one({"gfs_id": old_gfs_id}, {"$set": {"gfs_id": gfs_id, "compressed": compress}})
         doc["gfs_id"] = gfs_id
         doc["compressed"] = compress
         return old_gfs_id, gfs_id
@@ -372,7 +377,7 @@ class FilePad(MSONable):
         return cls(
             host=creds.get("host", "localhost"),
             port=int(creds.get("port", 27017)),
-            database=creds.get("name", "fireworks"),
+            name=creds.get("name", "fireworks"),
             username=user,
             password=password,
             authsource=authsource,

@@ -3,7 +3,7 @@ Using FilePad for storing and retrieving files
 ===============================================
 
 
-FilePad utility provides the api to add and delete arbitrary files of arbitrary sizes to MongoDB(filepad).
+FilePad utility provides the api to add, update and delete arbitrary files of arbitrary sizes to MongoDB(filepad).
 The is achieved by inserting the entire file contents to GridFS and storing the id returned by the
 GridFS insertion, the user provided identifier and the metadata in a document in the filepad. In the following
 documentation, ``file contents`` refers to the file contents stored in GridFS and ``document`` refers to the
@@ -59,6 +59,21 @@ Retrieve all the file contents and the associated documents by a general mongo q
 
 where ``<query>`` is monogo query dict and the returned values ``all_files`` is a list of ``(file_contents, doc)``
 tuples that match the query.
+
+
+Updating files
+=================
+
+To update the file contents associated with an existing identifier::
+
+    old_file_id, new_file_id = fp.update_file(<identifier>, <path>, compress=True/False)
+
+where ``<path>`` is the path to the new file. The old GridFS entry is deleted and the filepad
+document is updated with the new file ID. The old and new file IDs are returned.
+
+To update by the file ID instead::
+
+    old_file_id, new_file_id = fp.update_file_by_id(<file_id>, <path>, compress=True/False)
 
 
 Deleting files
